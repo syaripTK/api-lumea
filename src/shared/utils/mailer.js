@@ -2,16 +2,20 @@ const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
+  port: Number(process.env.SMTP_PORT),
+  secure: Number(process.env.SMTP_PORT) === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
 const sendWelcomeEmail = async (to, name) => {
-  const htmlContent = `
+  try {
+    const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -39,14 +43,19 @@ const sendWelcomeEmail = async (to, name) => {
     </html>
   `;
 
-  await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to,
-    subject: "Welcome to Education Service",
-    html: htmlContent,
-  });
+    const info = await transporter.sendMail({
+      from: `"Lumea Education" <${process.env.SMTP_USER}>`,
+      to,
+      subject: "Welcome to Education Service",
+      html: htmlContent,
+    });
+
+    console.log("Email sent: " + info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Email send failed:", error);
+    return null;
+  }
 };
 
-module.exports = {
-  sendWelcomeEmail,
-};
+module.exports = { sendWelcomeEmail };
