@@ -34,6 +34,12 @@ const createCharge = async (pendaftarId) => {
     const orderId = generateOrderId();
     const grossAmount = enrollment.programs.biaya_pendaftaran;
 
+    if (!process.env.MIDTRANS_SERVER_KEY || !process.env.MIDTRANS_CLIENT_KEY) {
+      throw new Error(
+        "Midtrans credentials not configured. Please add MIDTRANS_SERVER_KEY and MIDTRANS_CLIENT_KEY to .env file",
+      );
+    }
+
     const parameter = {
       transaction_details: {
         order_id: orderId,
@@ -55,7 +61,15 @@ const createCharge = async (pendaftarId) => {
       ],
     };
 
-    const midtransTransaction = await snap.createTransaction(parameter);
+    let midtransTransaction;
+    try {
+      midtransTransaction = await snap.createTransaction(parameter);
+    } catch (midtransError) {
+      console.error("Midtrans API Error:", midtransError.message);
+      throw new Error(
+        `Midtrans payment gateway error: ${midtransError.message}`,
+      );
+    }
 
     const payment = await Payments.create(
       {
