@@ -17,7 +17,7 @@ A comprehensive web application for educational program registration and managem
 ### Base URL
 
 ```
-http://localhost:3013/api/v1
+https://syangkan.petik.or.id/api/v1
 ```
 
 ### Authentication Endpoints
@@ -358,7 +358,7 @@ src/
    npm run dev
    ```
 
-4. **Server runs on:** `http://localhost:3013`
+4. **Server runs on:** `https://syangkan.petik.or.id
 
 ## Database Schema
 
