@@ -25,7 +25,11 @@ const chargeController = async (req, res) => {
       return errorResponse(res, 400, "Already paid");
     }
     if (error.message === "Program not associated with this enrollment") {
-      return errorResponse(res, 400, "Program not associated with this enrollment");
+      return errorResponse(
+        res,
+        400,
+        "Program not associated with this enrollment",
+      );
     }
     console.error("Payment Charge Error:", error);
     return errorResponse(res, 500, error.message);
@@ -35,13 +39,15 @@ const chargeController = async (req, res) => {
 const webhookController = async (req, res) => {
   try {
     if (!req.body) {
-      return errorResponse(res, 400, "Body is required");
+      console.error("Webhook: No body received");
+      return res.status(200).send("OK");
     }
+    console.log("Webhook received:", JSON.stringify(req.body));
     await handleWebhook(req.body);
-    return res.status(200).json({ status: "success", message: "OK" });
+    return res.status(200).send("OK");
   } catch (error) {
-    console.error("Webhook error:", error);
-    return errorResponse(res, 500, error.message);
+    console.error("Webhook processing error:", error.message);
+    return res.status(200).send("OK");
   }
 };
 

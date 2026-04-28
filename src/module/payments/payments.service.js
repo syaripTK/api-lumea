@@ -1,4 +1,9 @@
-const { Payments, Pendaftar, Programs, sequelize } = require("../../db/models/index.js");
+const {
+  Payments,
+  Pendaftar,
+  Programs,
+  sequelize,
+} = require("../../db/models/index.js");
 const { snap } = require("../../shared/utils/midtrans.js");
 
 const generateOrderId = () => {
@@ -108,13 +113,29 @@ const handleWebhook = async (notificationData) => {
     signature_key,
   } = notificationData;
 
+  if (!order_id || !status_code || !gross_amount || !signature_key) {
+    console.error("Webhook: Missing required fields");
+    throw new Error("Missing required webhook fields");
+  }
+
   const serverKey = process.env.MIDTRANS_SERVER_KEY;
-  const hashed = crypto
-    .createHash("sha512")
-    .update(order_id + status_code + gross_amount + serverKey)
-    .digest("hex");
+  if (!serverKey) {
+    console.error("Webhook: Midtrans server key not configured");
+    throw new Error("Midtrans server key not configured");
+  }
+
+  const inputString = order_id + status_code + gross_amount + serverKey;
+  const hashed = crypto.createHash("sha512").update(inputString).digest("hex");
+
+  console.log("Webhook signature verification:", {
+    inputString,
+    calculatedHash: hashed,
+    receivedHash: signature_key,
+    isValid: hashed === signature_key,
+  });
 
   if (hashed !== signature_key) {
+    console.error("Webhook: Invalid signature key");
     throw new Error("Invalid signature key");
   }
 
@@ -133,6 +154,7 @@ const handleWebhook = async (notificationData) => {
     });
 
     if (!payment) {
+      console.error("Webhook: Payment not found for order_id:", order_id);
       throw new Error("Payment not found");
     }
 
@@ -145,7 +167,10 @@ const handleWebhook = async (notificationData) => {
     );
 
     let status_pembayaran;
-    if (transaction_status === "capture" || transaction_status === "settlement") {
+    if (
+      transaction_status === "capture" ||
+      transaction_status === "settlement"
+    ) {
       status_pembayaran = "paid";
     } else if (
       transaction_status === "deny" ||
@@ -155,17 +180,17 @@ const handleWebhook = async (notificationData) => {
       status_pembayaran = "expired";
     }
 
-    if (status_pembayaran) {
-      await payment.pendaftar.update(
-        { status_pembayaran },
-        { transaction },
-      );
+    if (status_pembayaran && payment.pendaftar) {
+      await payment.pendaftar.update({ status_pembayaran }, { transaction });
+      console.log("Webhook: Updated enrollment status to:", status_pembayaran);
     }
 
     await transaction.commit();
+    console.log("Webhook: Payment processed successfully for order:", order_id);
     return payment;
   } catch (error) {
     await transaction.rollback();
+    console.error("Webhook: Database error:", error.message);
     throw error;
   }
 };
