@@ -1,4 +1,4 @@
-const { Payments, Pendaftar, Programs } = require("../../db/models/index.js");
+const { Payments, Pendaftar, Programs, sequelize } = require("../../db/models/index.js");
 const { snap } = require("../../shared/utils/midtrans.js");
 
 const generateOrderId = () => {
@@ -8,7 +8,6 @@ const generateOrderId = () => {
 };
 
 const createCharge = async (pendaftarId) => {
-  const sequelize = require("../../db/models/index.js").sequelize;
   const dbTransaction = await sequelize.transaction();
 
   try {
@@ -29,6 +28,10 @@ const createCharge = async (pendaftarId) => {
 
     if (enrollment.status_pembayaran === "paid") {
       throw new Error("Already paid");
+    }
+
+    if (!enrollment.programs) {
+      throw new Error("Program not associated with this enrollment");
     }
 
     const orderId = generateOrderId();
@@ -96,7 +99,6 @@ const createCharge = async (pendaftarId) => {
 };
 
 const handleWebhook = async (notificationData) => {
-  const sequelize = require("../../db/models/index.js").sequelize;
   const transaction = await sequelize.transaction();
 
   try {

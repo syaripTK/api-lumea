@@ -25,6 +25,11 @@ const chargeController = async (req, res) => {
     if (error.message === "Already paid") {
       return errorResponse(res, 400, "Already paid");
     }
+    if (error.message === "Program not associated with this enrollment") {
+      return errorResponse(res, 400, "Program not associated with this enrollment");
+    }
+
+    console.error("Payment Charge Error:", error);
     return errorResponse(res, 500, error.message);
   }
 };
