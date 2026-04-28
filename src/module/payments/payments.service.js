@@ -99,11 +99,28 @@ const createCharge = async (pendaftarId) => {
 };
 
 const handleWebhook = async (notificationData) => {
+  const crypto = require("crypto");
+  const {
+    order_id,
+    transaction_status,
+    gross_amount,
+    status_code,
+    signature_key,
+  } = notificationData;
+
+  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+  const hashed = crypto
+    .createHash("sha512")
+    .update(order_id + status_code + gross_amount + serverKey)
+    .digest("hex");
+
+  if (hashed !== signature_key) {
+    throw new Error("Invalid signature key");
+  }
+
   const transaction = await sequelize.transaction();
 
   try {
-    const { order_id, transaction_status, gross_amount } = notificationData;
-
     const payment = await Payments.findOne({
       where: { order_id },
       include: [
@@ -127,17 +144,20 @@ const handleWebhook = async (notificationData) => {
       { transaction },
     );
 
-    if (
-      transaction_status === "settlement" ||
-      transaction_status === "capture"
+    let status_pembayaran;
+    if (transaction_status === "capture" || transaction_status === "settlement") {
+      status_pembayaran = "paid";
+    } else if (
+      transaction_status === "deny" ||
+      transaction_status === "cancel" ||
+      transaction_status === "expire"
     ) {
+      status_pembayaran = "expired";
+    }
+
+    if (status_pembayaran) {
       await payment.pendaftar.update(
-        { status_pembayaran: "paid" },
-        { transaction },
-      );
-    } else if (transaction_status === "expire") {
-      await payment.pendaftar.update(
-        { status_pembayaran: "expired" },
+        { status_pembayaran },
         { transaction },
       );
     }

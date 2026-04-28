@@ -10,6 +10,8 @@ const programsRouter = require("./module/programs/programs.routes.js");
 const pendaftarRouter = require("./module/pendaftar/pendaftar.routes.js");
 const paymentsRouter = require("./module/payments/payments.routes.js");
 const reportsRouter = require("./module/reports/reports.routes.js");
+const dashboardRouter = require("./module/dashboard/dashboard.routes.js");
+
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use("/api/v1/programs", programsRouter);
 app.use("/api/v1/pendaftar", pendaftarRouter);
 app.use("/api/v1/payments", paymentsRouter);
 app.use("/api/v1/reports", reportsRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
+
 
 app.use(notFound);
 app.use(errorHandler);

@@ -256,17 +256,28 @@ Generate payment token for enrollment.
 }
 ```
 
-#### POST /payments/webhook
+#### POST /payments/notification
 
-Process payment notifications (public endpoint).
+Process payment notifications from Midtrans (public endpoint).
 
 **Request Body:**
 
 ```json
 {
   "order_id": "ORDER-1234567890-123",
+  "status_code": "200",
+  "gross_amount": "1500000.00",
   "transaction_status": "settlement",
-  "gross_amount": 1500000
+  "signature_key": "..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "message": "OK"
 }
 ```
 
@@ -300,6 +311,77 @@ Get administrative statistics (admin only).
     ]
   }
 }
+
+### Dashboard Endpoints
+
+#### GET /dashboard/siswa/stats
+
+Get current user's registration statistics (siswa only).
+
+**Headers:**
+
+```
+Authorization: Bearer <siswa_jwt_token>
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "message": "Student stats fetched successfully",
+  "data": {
+    "total_enrollments": 1,
+    "active_status": "pending",
+    "payment_status": "unpaid"
+  }
+}
+```
+
+#### GET /dashboard/admin/analytics
+
+Get high-level management analytics and visualizations (admin only).
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_jwt_token>
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "message": "Admin analytics fetched successfully",
+  "data": {
+    "monthly_registration_trend": [
+      {
+        "month": "2026-01",
+        "count": 5
+      }
+    ],
+    "program_distribution": [
+      {
+        "name": "Web Development Course",
+        "count": 10
+      }
+    ],
+    "payment_ratio": [
+      {
+        "status_pembayaran": "paid",
+        "count": 15
+      }
+    ],
+    "kpi_cards": {
+      "total_registered_users": 50,
+      "total_revenue": 15000000,
+      "pending_document_reviews": 5
+    }
+  }
+}
+```
+
 ```
 
 ## Authentication

@@ -10,13 +10,12 @@ const chargeController = async (req, res) => {
       return errorResponse(res, 400, "Body is required");
     }
     const { pendaftar_id } = req.body;
-    const userId = req.user.id;
-
     const payment = await createCharge(pendaftar_id);
     return successResponse(res, 201, "Payment charge created successfully", {
       order_id: payment.order_id,
       gross_amount: payment.gross_amount,
       snap_token: payment.snap_token,
+      redirect_url: payment.redirect_url,
     });
   } catch (error) {
     if (error.message === "Enrollment not found") {
@@ -28,7 +27,6 @@ const chargeController = async (req, res) => {
     if (error.message === "Program not associated with this enrollment") {
       return errorResponse(res, 400, "Program not associated with this enrollment");
     }
-
     console.error("Payment Charge Error:", error);
     return errorResponse(res, 500, error.message);
   }
@@ -39,11 +37,8 @@ const webhookController = async (req, res) => {
     if (!req.body) {
       return errorResponse(res, 400, "Body is required");
     }
-
-    const notificationData = req.body;
-    console.log("Webhook received:", notificationData);
-    await handleWebhook(notificationData);
-    return successResponse(res, 200, "Webhook processed successfully");
+    await handleWebhook(req.body);
+    return res.status(200).json({ status: "success", message: "OK" });
   } catch (error) {
     console.error("Webhook error:", error);
     return errorResponse(res, 500, error.message);

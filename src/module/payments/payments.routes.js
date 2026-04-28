@@ -6,6 +6,6 @@ const { charge, webhook } = require("./payments.controller.js");
 const router = express.Router();
 
 router.post("/charge", verifyToken(["siswa", "admin"]), chargeValidator, validate, charge);
-router.post("/webhook", webhook);
+router.post("/notification", webhook);
 
 module.exports = router;
