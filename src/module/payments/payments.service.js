@@ -1,4 +1,5 @@
 const { Payments, Pendaftar, Programs } = require("../../db/models/index.js");
+const { snap } = require("../../shared/utils/midtrans.js");
 
 const generateOrderId = () => {
   const timestamp = Date.now();
@@ -8,7 +9,7 @@ const generateOrderId = () => {
 
 const createCharge = async (pendaftarId) => {
   const sequelize = require("../../db/models/index.js").sequelize;
-  const transaction = await sequelize.transaction();
+  const dbTransaction = await sequelize.transaction();
 
   try {
     const enrollment = await Pendaftar.findByPk(pendaftarId, {
@@ -19,7 +20,7 @@ const createCharge = async (pendaftarId) => {
           attributes: ["id", "nama_program", "biaya_pendaftaran"],
         },
       ],
-      transaction,
+      transaction: dbTransaction,
     });
 
     if (!enrollment) {
@@ -32,23 +33,50 @@ const createCharge = async (pendaftarId) => {
 
     const orderId = generateOrderId();
     const grossAmount = enrollment.programs.biaya_pendaftaran;
-    const snapToken = `SNAP-TOKEN-${orderId}-${Date.now()}`;
+
+    const parameter = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: grossAmount,
+      },
+      customer_details: {
+        first_name: "Student",
+        last_name: "Name",
+        email: "student@example.com",
+        phone: "081234567890",
+      },
+      item_details: [
+        {
+          id: enrollment.programs.id,
+          price: grossAmount,
+          quantity: 1,
+          name: enrollment.programs.nama_program,
+        },
+      ],
+    };
+
+    const midtransTransaction = await snap.createTransaction(parameter);
 
     const payment = await Payments.create(
       {
         pendaftar_id: pendaftarId,
         order_id: orderId,
         gross_amount: grossAmount,
-        snap_token: snapToken,
+        snap_token: midtransTransaction.token,
         transaction_status: "pending",
       },
-      { transaction },
+      { transaction: dbTransaction },
     );
 
-    await transaction.commit();
-    return payment;
+    await dbTransaction.commit();
+    return {
+      order_id: orderId,
+      gross_amount: grossAmount,
+      snap_token: midtransTransaction.token,
+      redirect_url: midtransTransaction.redirect_url,
+    };
   } catch (error) {
-    await transaction.rollback();
+    await dbTransaction.rollback();
     throw error;
   }
 };

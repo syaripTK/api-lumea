@@ -25,11 +25,7 @@ const updateStatusValidator = [
     .bail()
     .isIn(["terverifikasi", "ditolak"])
     .withMessage("Status harus 'terverifikasi' atau 'ditolak'"),
-  body("catatan_admin")
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage("Catatan admin tidak boleh kosong"),
+  body("catatan_admin").optional().trim(),
 ];
 
 const idValidator = [
